@@ -250,6 +250,7 @@ HRESULT CTVTestVideoDecoderProp::OnActivate()
 	::SendDlgItemMessage(m_Dlg, IDC_PROP_NUM_QUEUE_FRAMES, CB_SETCURSEL, m_OldSettings.NumQueueFrames, 0);
 
 	m_fInitialized = true;
+	m_DarkMode.Initialize(m_Dlg);
 
 	return S_OK;
 }
@@ -262,6 +263,10 @@ HRESULT CTVTestVideoDecoderProp::OnApplyChanges()
 
 INT_PTR CTVTestVideoDecoderProp::OnReceiveMessage(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
+	INT_PTR Result;
+	if (m_DarkMode.HandleMessage(hwnd, uMsg, wParam, lParam, &Result))
+		return Result;
+
 	switch (uMsg) {
 	case WM_COMMAND:
 		switch (LOWORD(wParam)) {

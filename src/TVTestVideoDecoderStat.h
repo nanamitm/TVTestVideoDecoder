@@ -21,6 +21,7 @@
 
 #include "ITVTestVideoDecoder.h"
 #include "COMUtil.h"
+#include "Util.h"
 
 
 class __declspec(uuid("48749A3E-2680-4833-93AF-8B93914B376F")) CTVTestVideoDecoderStat
@@ -47,6 +48,7 @@ public:
 private:
 	COMPointer<ITVTestVideoDecoder> m_Decoder;
 	TVTVIDEODEC_Statistics m_Stat;
+	CDialogDarkModeSupport m_DarkMode;
 
 	~CTVTestVideoDecoderStat();
 	void MakeDirty();

@@ -18,6 +18,8 @@
 
 #pragma once
 
+#include <commctrl.h>
+
 
 template<typename T> inline void SafeDelete(T *&p)
 {
@@ -57,3 +59,54 @@ CLSID GetConnectedFilterCLSID(CBasePin *pPin);
 bool IsMediaTypeInterlaced(const AM_MEDIA_TYPE *pmt);
 SIZE GetDXVASurfaceSize(const SIZE &Size, bool fMPEG2);
 bool IsWindows8OrGreater();
+
+bool IsDarkThemeSupported();
+bool SetWindowDarkTheme(HWND hwnd, bool fDark);
+bool SetAppAllowDarkMode(bool fAllow);
+bool SetWindowAllowDarkMode(HWND hwnd, bool fAllow);
+bool SetWindowFrameDarkMode(HWND hwnd, bool fDarkMode);
+bool IsDarkMode();
+bool IsHighContrast();
+bool IsDarkModeSettingChanged(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam);
+
+class CDialogDarkModeSupport
+{
+public:
+	CDialogDarkModeSupport();
+	~CDialogDarkModeSupport();
+
+	void Initialize(HWND hwnd);
+	bool HandleMessage(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam, INT_PTR *pResult);
+
+private:
+	bool m_fInitialized;
+	bool m_fAllowDarkMode;
+	bool m_fDarkMode;
+	COLORREF m_BackColor;
+	COLORREF m_FaceColor;
+	COLORREF m_TextColor;
+	COLORREF m_DisabledTextColor;
+	HBRUSH m_hBackBrush;
+	HBRUSH m_hFaceBrush;
+
+	void UpdateColors();
+	void InitializeControls(HWND hwnd);
+	void UpdateControlColors(HWND hwnd);
+	LRESULT HandleCtlColor(UINT uMsg, WPARAM wParam, LPARAM lParam) const;
+	LRESULT HandleNotify(LPARAM lParam) const;
+	LRESULT CustomDrawButton(LPARAM lParam) const;
+	void DrawButton(HWND hwnd, HDC hdc) const;
+	void DrawGroupBox(HWND hwnd, HDC hdc) const;
+	bool SetControlDarkTheme(HWND hwnd, bool fDark);
+	void Redraw(HWND hwnd) const;
+	void FreeBrushes();
+
+	static BOOL CALLBACK InitializeControlsProc(HWND hwnd, LPARAM lParam);
+	static BOOL CALLBACK UpdateControlColorsProc(HWND hwnd, LPARAM lParam);
+	static LRESULT CALLBACK GroupBoxSubclassProc(
+		HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
+		UINT_PTR uIdSubclass, DWORD_PTR dwRefData);
+	static LRESULT CALLBACK ButtonSubclassProc(
+		HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
+		UINT_PTR uIdSubclass, DWORD_PTR dwRefData);
+};

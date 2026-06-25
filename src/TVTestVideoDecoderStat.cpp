@@ -109,6 +109,7 @@ HRESULT CTVTestVideoDecoderStat::OnActivate()
 					  );
 
 	::SetTimer(m_Dlg, 1, 500, nullptr);
+	m_DarkMode.Initialize(m_Dlg);
 
 	return S_OK;
 }
@@ -120,6 +121,10 @@ HRESULT CTVTestVideoDecoderStat::OnApplyChanges()
 
 INT_PTR CTVTestVideoDecoderStat::OnReceiveMessage(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
+	INT_PTR Result;
+	if (m_DarkMode.HandleMessage(hwnd, uMsg, wParam, lParam, &Result))
+		return Result;
+
 	switch (uMsg) {
 	case WM_TIMER:
 		if (m_Decoder) {
