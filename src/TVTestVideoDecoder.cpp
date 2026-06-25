@@ -1667,7 +1667,6 @@ STDMETHODIMP CTVTestVideoDecoder::GetStatistics(TVTVIDEODEC_Statistics *pStatist
 		}
 	}
 
-	Mask |= TVTVIDEODEC_STAT_ALL;
 	pStatistics->Mask = Mask;
 
 	return S_OK;
@@ -1794,55 +1793,55 @@ HRESULT CTVTestVideoDecoder::PropertyBag_Write(LPCOLESTR pszPropName, VARIANT *p
 	if (::lstrcmpiW(pszPropName, KEY_EnableDeinterlace) == 0) {
 		hr = ChangeType(VT_BOOL);
 		if (SUCCEEDED(hr))
-			SetEnableDeinterlace(Var.boolVal != VARIANT_FALSE);
+			hr = SetEnableDeinterlace(Var.boolVal != VARIANT_FALSE);
 	} else if (::lstrcmpiW(pszPropName, KEY_DeinterlaceMethod) == 0) {
 		hr = ChangeType(VT_INT);
 		if (SUCCEEDED(hr))
-			SetDeinterlaceMethod(static_cast<TVTVIDEODEC_DeinterlaceMethod>(Var.intVal));
+			hr = SetDeinterlaceMethod(static_cast<TVTVIDEODEC_DeinterlaceMethod>(Var.intVal));
 	} else if (::lstrcmpiW(pszPropName, KEY_AdaptProgressive) == 0) {
 		hr = ChangeType(VT_BOOL);
 		if (SUCCEEDED(hr))
-			SetAdaptProgressive(Var.boolVal != VARIANT_FALSE);
+			hr = SetAdaptProgressive(Var.boolVal != VARIANT_FALSE);
 	} else if (::lstrcmpiW(pszPropName, KEY_AdaptTelecine) == 0) {
 		hr = ChangeType(VT_BOOL);
 		if (SUCCEEDED(hr))
-			SetAdaptTelecine(Var.boolVal != VARIANT_FALSE);
+			hr = SetAdaptTelecine(Var.boolVal != VARIANT_FALSE);
 	} else if (::lstrcmpiW(pszPropName, KEY_SetInterlacedFlag) == 0) {
 		hr = ChangeType(VT_BOOL);
 		if (SUCCEEDED(hr))
-			SetInterlacedFlag(Var.boolVal != VARIANT_FALSE);
+			hr = SetInterlacedFlag(Var.boolVal != VARIANT_FALSE);
 	} else if (::lstrcmpiW(pszPropName, KEY_Brightness) == 0) {
 		hr = ChangeType(VT_INT);
 		if (SUCCEEDED(hr))
-			SetBrightness(Var.intVal);
+			hr = SetBrightness(Var.intVal);
 	} else if (::lstrcmpiW(pszPropName, KEY_Contrast) == 0) {
 		hr = ChangeType(VT_INT);
 		if (SUCCEEDED(hr))
-			SetContrast(Var.intVal);
+			hr = SetContrast(Var.intVal);
 	} else if (::lstrcmpiW(pszPropName, KEY_Hue) == 0) {
 		hr = ChangeType(VT_INT);
 		if (SUCCEEDED(hr))
-			SetHue(Var.intVal);
+			hr = SetHue(Var.intVal);
 	} else if (::lstrcmpiW(pszPropName, KEY_Saturation) == 0) {
 		hr = ChangeType(VT_INT);
 		if (SUCCEEDED(hr))
-			SetSaturation(Var.intVal);
+			hr = SetSaturation(Var.intVal);
 	} else if (::lstrcmpiW(pszPropName, KEY_NumThreads) == 0) {
 		hr = ChangeType(VT_INT);
 		if (SUCCEEDED(hr))
-			SetNumThreads(Var.intVal);
+			hr = SetNumThreads(Var.intVal);
 	} else if (::lstrcmpiW(pszPropName, KEY_EnableDXVA2) == 0) {
 		hr = ChangeType(VT_BOOL);
 		if (SUCCEEDED(hr))
-			SetEnableDXVA2(Var.boolVal != VARIANT_FALSE);
+			hr = SetEnableDXVA2(Var.boolVal != VARIANT_FALSE);
 	} else if (::lstrcmpiW(pszPropName, KEY_EnableD3D11) == 0) {
 		hr = ChangeType(VT_BOOL);
 		if (SUCCEEDED(hr))
-			SetEnableD3D11(Var.boolVal != VARIANT_FALSE);
+			hr = SetEnableD3D11(Var.boolVal != VARIANT_FALSE);
 	} else if (::lstrcmpiW(pszPropName, KEY_NumQueueFrames) == 0) {
 		hr = ChangeType(VT_INT);
 		if (SUCCEEDED(hr))
-			SetNumQueueFrames(Var.intVal);
+			hr = SetNumQueueFrames(Var.intVal);
 	} else {
 		hr = E_INVALIDARG;
 	}
@@ -1875,7 +1874,10 @@ HRESULT CTVTestVideoDecoder::PropertyBag2_Write(
 	CheckPointer(pvarValue, E_POINTER);
 
 	for (ULONG i = 0; i < cProperties; i++) {
-		PropertyBag_Write(pPropBag[i].pstrName, &pvarValue[i]);
+		HRESULT hr = PropertyBag_Write(pPropBag[i].pstrName, &pvarValue[i]);
+		if (FAILED(hr)) {
+			return hr;
+		}
 	}
 
 	return S_OK;
@@ -1960,13 +1962,17 @@ STDMETHODIMP CMpeg2DecoderInputPin::Get(
 {
 	if (PropSet == AM_KSPROPSETID_TSRateChange) {
 		switch (Id) {
-		/*
 		case AM_RATE_SimpleRateChange:
 			{
 				AM_SimpleRateChange *p = static_cast<AM_SimpleRateChange*>(pPropertyData);
+				if (DataLength < sizeof(AM_SimpleRateChange) || !pBytesReturned) {
+					return E_POINTER;
+				}
+				CAutoLock Lock(&m_csRateLock);
+				*p = m_RateChange;
+				*pBytesReturned = sizeof(AM_SimpleRateChange);
 			}
 			break;
-		*/
 
 		case AM_RATE_MaxFullDataRate:
 			{
@@ -1987,13 +1993,17 @@ STDMETHODIMP CMpeg2DecoderInputPin::Get(
 			}
 			break;
 
-		/*
 		case AM_RATE_QueryLastRateSegPTS:
 			{
 				REFERENCE_TIME *p = static_cast<REFERENCE_TIME*>(pPropertyData);
+				if (DataLength < sizeof(REFERENCE_TIME) || !pBytesReturned) {
+					return E_POINTER;
+				}
+				CAutoLock Lock(&m_csRateLock);
+				*p = m_RateChange.StartTime;
+				*pBytesReturned = sizeof(REFERENCE_TIME);
 			}
 			break;
-		*/
 
 		default:
 			return E_PROP_ID_UNSUPPORTED;
