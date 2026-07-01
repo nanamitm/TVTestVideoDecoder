@@ -33,6 +33,10 @@ namespace {
 constexpr UINT_PTR GROUPBOX_SUBCLASS_ID = 1;
 constexpr UINT_PTR BUTTON_SUBCLASS_ID = 2;
 
+// DWMWINDOWATTRIBUTE values not available in older Windows SDKs.
+constexpr DWORD DWM_ATTR_USE_IMMERSIVE_DARK_MODE = 20;
+constexpr DWORD DWM_ATTR_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1 = 19;
+
 enum class PreferredAppMode {
 	Default,
 	AllowDark,
@@ -325,10 +329,10 @@ bool SetWindowFrameDarkMode(HWND hwnd, bool fDarkMode)
 
 	const BOOL fDark = fDarkMode ? TRUE : FALSE;
 
-	if (SUCCEEDED(::DwmSetWindowAttribute(hwnd, 20, &fDark, sizeof(fDark))))
+	if (SUCCEEDED(::DwmSetWindowAttribute(hwnd, DWM_ATTR_USE_IMMERSIVE_DARK_MODE, &fDark, sizeof(fDark))))
 		return true;
 
-	return SUCCEEDED(::DwmSetWindowAttribute(hwnd, 19, &fDark, sizeof(fDark)));
+	return SUCCEEDED(::DwmSetWindowAttribute(hwnd, DWM_ATTR_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1, &fDark, sizeof(fDark)));
 }
 
 bool IsHighContrast()
