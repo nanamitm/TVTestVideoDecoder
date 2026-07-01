@@ -324,12 +324,13 @@ HRESULT CTVTestVideoDecoder::FlushFrameQueue()
 		for (;;) {
 			CFrameBuffer Frame;
 			HRESULT hr = pD3D11Decoder->GetQueuedFrame(&Frame);
-			if (hr == S_OK) {
-				hr = DeliverFrame(&Frame);
-				pD3D11Decoder->UnlockFrame(&Frame);
-				if (FAILED(hr)) {
-					return hr;
-				}
+			if (hr != S_OK) {
+				break;
+			}
+			hr = DeliverFrame(&Frame);
+			pD3D11Decoder->UnlockFrame(&Frame);
+			if (FAILED(hr)) {
+				return hr;
 			}
 		}
 
