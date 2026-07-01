@@ -502,7 +502,8 @@ LRESULT CDialogDarkModeSupport::HandleCtlColor(UINT uMsg, WPARAM wParam, LPARAM 
 	bool fGroupBox = false;
 
 	TCHAR szClassName[64] = TEXT("");
-	if (::GetClassName(hwnd, szClassName, _countof(szClassName)) < 1)
+	const int ClassNameLength = ::GetClassName(hwnd, szClassName, _countof(szClassName));
+	if (ClassNameLength < 1)
 		return FALSE;
 
 	switch (uMsg) {
@@ -521,20 +522,14 @@ LRESULT CDialogDarkModeSupport::HandleCtlColor(UINT uMsg, WPARAM wParam, LPARAM 
 		break;
 
 	case WM_CTLCOLOREDIT:
-		{
-			if (::GetClassName(hwnd, szClassName, _countof(szClassName)) == 8
-					&& ::lstrcmpi(szClassName, TEXT("COMBOBOX")) == 0) {
-				fFaceColor = true;
-			}
+		if (ClassNameLength == 8 && ::lstrcmpi(szClassName, TEXT("COMBOBOX")) == 0) {
+			fFaceColor = true;
 		}
 		break;
 
 	case WM_CTLCOLORLISTBOX:
-		{
-			if (::GetClassName(hwnd, szClassName, _countof(szClassName)) == 9
-					&& ::lstrcmpi(szClassName, TEXT("ComboLBox")) == 0) {
-				fFaceColor = true;
-			}
+		if (ClassNameLength == 9 && ::lstrcmpi(szClassName, TEXT("ComboLBox")) == 0) {
+			fFaceColor = true;
 		}
 		break;
 	}
