@@ -91,7 +91,6 @@ private:
 
 	void UpdateColors();
 	void InitializeControls(HWND hwnd);
-	void UpdateControlColors(HWND hwnd);
 	LRESULT HandleCtlColor(UINT uMsg, WPARAM wParam, LPARAM lParam) const;
 	LRESULT HandleNotify(LPARAM lParam) const;
 	LRESULT CustomDrawButton(LPARAM lParam) const;
@@ -103,7 +102,6 @@ private:
 	void FreeBrushes();
 
 	static BOOL CALLBACK InitializeControlsProc(HWND hwnd, LPARAM lParam);
-	static BOOL CALLBACK UpdateControlColorsProc(HWND hwnd, LPARAM lParam);
 	static LRESULT CALLBACK GroupBoxSubclassProc(
 		HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam,
 		UINT_PTR uIdSubclass, DWORD_PTR dwRefData);

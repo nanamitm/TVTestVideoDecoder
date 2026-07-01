@@ -390,7 +390,6 @@ void CDialogDarkModeSupport::Initialize(HWND hwnd)
 
 	UpdateColors();
 	InitializeControls(hwnd);
-	UpdateControlColors(hwnd);
 	Redraw(hwnd);
 	m_fInitialized = true;
 }
@@ -457,7 +456,6 @@ bool CDialogDarkModeSupport::HandleMessage(HWND hwnd, UINT uMsg, WPARAM wParam, 
 					SetWindowFrameDarkMode(hwnd, fDarkMode);
 				UpdateColors();
 				InitializeControls(hwnd);
-				UpdateControlColors(hwnd);
 				Redraw(hwnd);
 			}
 		}
@@ -467,7 +465,6 @@ bool CDialogDarkModeSupport::HandleMessage(HWND hwnd, UINT uMsg, WPARAM wParam, 
 	case WM_SYSCOLORCHANGE:
 		UpdateColors();
 		InitializeControls(hwnd);
-		UpdateControlColors(hwnd);
 		Redraw(hwnd);
 		break;
 
@@ -494,11 +491,6 @@ void CDialogDarkModeSupport::InitializeControls(HWND hwnd)
 {
 	SetControlDarkTheme(hwnd, m_fDarkMode);
 	::EnumChildWindows(hwnd, InitializeControlsProc, reinterpret_cast<LPARAM>(this));
-}
-
-void CDialogDarkModeSupport::UpdateControlColors(HWND hwnd)
-{
-	::EnumChildWindows(hwnd, UpdateControlColorsProc, reinterpret_cast<LPARAM>(this));
 }
 
 LRESULT CDialogDarkModeSupport::HandleCtlColor(UINT uMsg, WPARAM wParam, LPARAM lParam) const
@@ -876,13 +868,6 @@ BOOL CALLBACK CDialogDarkModeSupport::InitializeControlsProc(HWND hwnd, LPARAM l
 {
 	CDialogDarkModeSupport *pThis = reinterpret_cast<CDialogDarkModeSupport*>(lParam);
 	pThis->SetControlDarkTheme(hwnd, pThis->m_fDarkMode);
-	return TRUE;
-}
-
-BOOL CALLBACK CDialogDarkModeSupport::UpdateControlColorsProc(HWND hwnd, LPARAM lParam)
-{
-	UNREFERENCED_PARAMETER(hwnd);
-	UNREFERENCED_PARAMETER(lParam);
 	return TRUE;
 }
 
