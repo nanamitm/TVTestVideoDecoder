@@ -406,6 +406,7 @@ bool CDialogDarkModeSupport::HandleMessage(HWND hwnd, UINT uMsg, WPARAM wParam, 
 			::FillRect(hdc, &rc, m_hFaceBrush);
 			if (pResult)
 				*pResult = TRUE;
+			::SetWindowLongPtr(hwnd, DWLP_MSGRESULT, TRUE);
 			return true;
 		}
 		break;
@@ -418,10 +419,13 @@ bool CDialogDarkModeSupport::HandleMessage(HWND hwnd, UINT uMsg, WPARAM wParam, 
 			::FillRect(hdc, &rc, m_hFaceBrush);
 			if (pResult)
 				*pResult = TRUE;
+			::SetWindowLongPtr(hwnd, DWLP_MSGRESULT, TRUE);
 			return true;
 		}
 		break;
 
+	// WM_CTLCOLORBTN/STATIC/EDIT/LISTBOX are among the documented dialog-proc
+	// exceptions: their return value is used directly, without DWLP_MSGRESULT.
 	case WM_CTLCOLORBTN:
 	case WM_CTLCOLORSTATIC:
 	case WM_CTLCOLOREDIT:
@@ -436,7 +440,10 @@ bool CDialogDarkModeSupport::HandleMessage(HWND hwnd, UINT uMsg, WPARAM wParam, 
 	case WM_NOTIFY:
 		if (m_fDarkMode && pResult) {
 			*pResult = HandleNotify(lParam);
-			return *pResult != 0;
+			if (*pResult != 0) {
+				::SetWindowLongPtr(hwnd, DWLP_MSGRESULT, *pResult);
+				return true;
+			}
 		}
 		break;
 
