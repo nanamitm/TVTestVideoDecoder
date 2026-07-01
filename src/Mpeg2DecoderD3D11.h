@@ -82,6 +82,8 @@ private:
 	DXGI_ADAPTER_DESC m_AdapterDesc;
 	COMPointer<CD3D11Allocator> m_Allocator;
 	COMPointer<ID3D11Texture2D> m_StagingTexture;
+	int m_DecoderWidth;
+	int m_DecoderHeight;
 
 	bool m_fDeviceLost;
 	DXVA_PictureParameters m_PictureParams;

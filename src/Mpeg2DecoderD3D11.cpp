@@ -32,6 +32,8 @@ CMpeg2DecoderD3D11::CMpeg2DecoderD3D11()
 	, m_hD3D11Lib(nullptr)
 	, m_hDXGILib(nullptr)
 	, m_AdapterDesc()
+	, m_DecoderWidth(0)
+	, m_DecoderHeight(0)
 
 	, m_fDeviceLost(false)
 	, m_pSliceBuffer(nullptr)
@@ -248,6 +250,16 @@ HRESULT CMpeg2DecoderD3D11::CreateDecoder()
 
 	CloseDecoder();
 
+	// Prefer the live sequence size (updated as soon as a new MPEG-2 sequence
+	// header is parsed) over the pin-negotiated dimensions, which can still
+	// reflect the previous resolution when this is called to recreate the
+	// decoder for a mid-stream resolution change.
+	int Width, Height;
+	if (!GetOutputSize(&Width, &Height) || Width < 1 || Height < 1) {
+		Width = m_pFilter->m_Dimensions.Width;
+		Height = m_pFilter->m_Dimensions.Height;
+	}
+
 	ID3D11VideoDevice *pVideoDevice = nullptr;
 	HRESULT hr = m_Device->QueryInterface(IID_PPV_ARGS(&pVideoDevice));
 	if (FAILED(hr)) {
@@ -276,8 +288,8 @@ HRESULT CMpeg2DecoderD3D11::CreateDecoder()
 	} else {
 		D3D11_VIDEO_DECODER_DESC DecoderDesc = {};
 		DecoderDesc.Guid = ProfileID;
-		DecoderDesc.SampleWidth = m_pFilter->m_Dimensions.Width;
-		DecoderDesc.SampleHeight = m_pFilter->m_Dimensions.Height;
+		DecoderDesc.SampleWidth = Width;
+		DecoderDesc.SampleHeight = Height;
 		DecoderDesc.OutputFormat = DXGI_FORMAT_NV12;
 
 		UINT ConfigCount = 0;
@@ -304,6 +316,8 @@ HRESULT CMpeg2DecoderD3D11::CreateDecoder()
 					m_VideoDecoder.Attach(pVideoDecoder);
 					m_TextureFormat = DecoderDesc.OutputFormat;
 					m_ProfileID = ProfileID;
+					m_DecoderWidth = Width;
+					m_DecoderHeight = Height;
 				}
 #ifdef _DEBUG
 				else {
@@ -327,6 +341,8 @@ void CMpeg2DecoderD3D11::CloseDecoder()
 
 	m_VideoDecoder.Release();
 	m_fDeviceLost = false;
+	m_DecoderWidth = 0;
+	m_DecoderHeight = 0;
 
 	m_TextureFormat = DXGI_FORMAT_UNKNOWN;
 	m_ProfileID = GUID_NULL;
@@ -404,6 +420,27 @@ HRESULT CMpeg2DecoderD3D11::DecodeFrame(CFrameBuffer *pFrameBuffer)
 
 	if (m_pDec->picture->flags & PIC_FLAG_SKIP) {
 		return GetDisplayFrame(pFrameBuffer);
+	}
+
+	// A sub-channel/PID switch can change the picture size without the
+	// output pin being reconnected first, so the existing decoder object
+	// and texture array (sized for the previous resolution) must not be
+	// reused with picture parameters describing a different resolution:
+	// that mismatch is submitted straight to the GPU driver's decode
+	// block and can corrupt GPU memory. Recreate the decoder (which also
+	// forces a fresh, correctly-sized texture allocator) whenever the
+	// live sequence size no longer matches what it was created for.
+	{
+		int SeqWidth, SeqHeight;
+		if (GetOutputSize(&SeqWidth, &SeqHeight)
+				&& (SeqWidth != m_DecoderWidth || SeqHeight != m_DecoderHeight)) {
+			DBG_TRACE(TEXT("Video size changed (%d x %d -> %d x %d), recreating D3D11 decoder"),
+					  m_DecoderWidth, m_DecoderHeight, SeqWidth, SeqHeight);
+			const HRESULT hr = CreateDecoder();
+			if (FAILED(hr)) {
+				return hr;
+			}
+		}
 	}
 
 	m_DecodeSampleIndex = GetFBufIndex(m_pDec->fbuf[0]);
