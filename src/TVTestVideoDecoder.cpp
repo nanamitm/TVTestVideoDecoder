@@ -1873,14 +1873,16 @@ HRESULT CTVTestVideoDecoder::PropertyBag2_Write(
 	CheckPointer(pPropBag, E_POINTER);
 	CheckPointer(pvarValue, E_POINTER);
 
+	HRESULT hrFirstError = S_OK;
+
 	for (ULONG i = 0; i < cProperties; i++) {
-		HRESULT hr = PropertyBag_Write(pPropBag[i].pstrName, &pvarValue[i]);
-		if (FAILED(hr)) {
-			return hr;
+		const HRESULT hr = PropertyBag_Write(pPropBag[i].pstrName, &pvarValue[i]);
+		if (FAILED(hr) && SUCCEEDED(hrFirstError)) {
+			hrFirstError = hr;
 		}
 	}
 
-	return S_OK;
+	return hrFirstError;
 }
 
 
