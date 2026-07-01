@@ -927,7 +927,8 @@ void CDialogDarkModeSupport::FreeBrushes()
 BOOL CALLBACK CDialogDarkModeSupport::InitializeControlsProc(HWND hwnd, LPARAM lParam)
 {
 	CDialogDarkModeSupport *pThis = reinterpret_cast<CDialogDarkModeSupport*>(lParam);
-	return pThis->SetControlDarkTheme(hwnd, pThis->m_fDarkMode) ? TRUE : TRUE;
+	pThis->SetControlDarkTheme(hwnd, pThis->m_fDarkMode);
+	return TRUE;
 }
 
 BOOL CALLBACK CDialogDarkModeSupport::UpdateControlColorsProc(HWND hwnd, LPARAM lParam)
