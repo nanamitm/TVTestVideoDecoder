@@ -97,6 +97,7 @@ private:
 	LRESULT CustomDrawButton(LPARAM lParam) const;
 	void DrawButton(HWND hwnd, HDC hdc) const;
 	void DrawGroupBox(HWND hwnd, HDC hdc) const;
+	void DrawButtonThemePart(HWND hwnd, HDC hdc, const RECT &rcButton, int Part, int State, bool fDisabled) const;
 	bool SetControlDarkTheme(HWND hwnd, bool fDark);
 	void Redraw(HWND hwnd) const;
 	void FreeBrushes();

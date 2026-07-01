@@ -646,50 +646,8 @@ LRESULT CDialogDarkModeSupport::CustomDrawButton(LPARAM lParam) const
 		return 0;
 	}
 
-	const HTHEME hTheme = ::OpenThemeData(hwnd, VSCLASS_BUTTON);
-	if (!hTheme)
-		return 0;
-
-	SIZE CheckSize = {0, 0};
-	::GetThemePartSize(hTheme, pnmcd->hdc, Part, State, nullptr, TS_DRAW, &CheckSize);
-
 	::FillRect(pnmcd->hdc, &pnmcd->rc, m_hFaceBrush);
-
-	RECT rcMark = pnmcd->rc;
-	rcMark.top += ((rcMark.bottom - rcMark.top) - CheckSize.cy) / 2;
-	rcMark.right = rcMark.left + CheckSize.cx;
-	rcMark.bottom = rcMark.top + CheckSize.cy;
-	::DrawThemeBackground(hTheme, pnmcd->hdc, Part, State, &rcMark, nullptr);
-
-	TCHAR szText[256] = TEXT("");
-	const int TextLength = ::GetWindowText(hwnd, szText, _countof(szText));
-	if (TextLength > 0) {
-		SIZE Size = {0, 0};
-		::GetTextExtentPoint32(pnmcd->hdc, TEXT("0"), 1, &Size);
-		RECT rcText = pnmcd->rc;
-		rcText.left = rcMark.right + Size.cx / 2;
-
-		UINT Format = DT_LEFT;
-		if ((Style & BS_MULTILINE) != 0)
-			Format |= DT_WORDBREAK;
-		else
-			Format |= DT_SINGLELINE | DT_VCENTER;
-		if ((::SendMessage(hwnd, WM_QUERYUISTATE, 0, 0) & UISF_HIDEACCEL) != 0)
-			Format |= DT_HIDEPREFIX;
-
-		const HFONT hFont = reinterpret_cast<HFONT>(::SendMessage(hwnd, WM_GETFONT, 0, 0));
-		const HGDIOBJ hOldFont = hFont ? ::SelectObject(pnmcd->hdc, hFont) : nullptr;
-		const int OldBkMode = ::SetBkMode(pnmcd->hdc, TRANSPARENT);
-		const COLORREF OldTextColor = ::SetTextColor(
-			pnmcd->hdc, fDisabled ? m_DisabledTextColor : m_TextColor);
-		::DrawText(pnmcd->hdc, szText, TextLength, &rcText, Format);
-		::SetTextColor(pnmcd->hdc, OldTextColor);
-		::SetBkMode(pnmcd->hdc, OldBkMode);
-		if (hOldFont)
-			::SelectObject(pnmcd->hdc, hOldFont);
-	}
-
-	::CloseThemeData(hTheme);
+	DrawButtonThemePart(hwnd, pnmcd->hdc, pnmcd->rc, Part, State, fDisabled);
 	return CDRF_SKIPDEFAULT;
 }
 
@@ -755,49 +713,38 @@ void CDialogDarkModeSupport::DrawGroupBox(HWND hwnd, HDC hdc) const
 
 void CDialogDarkModeSupport::DrawButton(HWND hwnd, HDC hdc) const
 {
+	// SetControlDarkTheme() only subclasses radio buttons and group boxes;
+	// checkboxes are themed via SetWindowDarkTheme() and painted through
+	// CustomDrawButton() instead, so this only ever sees radio buttons.
 	const DWORD Style = static_cast<DWORD>(::GetWindowLong(hwnd, GWL_STYLE));
 	const DWORD Type = Style & BS_TYPEMASK;
-	if ((Type != BS_RADIOBUTTON && Type != BS_AUTORADIOBUTTON
-			&& Type != BS_CHECKBOX && Type != BS_AUTOCHECKBOX
-			&& Type != BS_3STATE && Type != BS_AUTO3STATE)
-			|| (Style & BS_PUSHLIKE) != 0) {
-		return;
-	}
-
-	const HTHEME hTheme = ::OpenThemeData(hwnd, VSCLASS_BUTTON);
-	if (!hTheme)
+	if ((Type != BS_RADIOBUTTON && Type != BS_AUTORADIOBUTTON) || (Style & BS_PUSHLIKE) != 0)
 		return;
 
 	const bool fChecked = Button_GetCheck(hwnd) == BST_CHECKED;
-	const bool fIndeterminate = Button_GetCheck(hwnd) == BST_INDETERMINATE;
 	const bool fDisabled = !::IsWindowEnabled(hwnd);
-	int Part = 0;
-	int State = 0;
-
-	if (Type == BS_RADIOBUTTON || Type == BS_AUTORADIOBUTTON) {
-		Part = BP_RADIOBUTTON;
-		State = fChecked
-			? (fDisabled ? RBS_CHECKEDDISABLED : RBS_CHECKEDNORMAL)
-			: (fDisabled ? RBS_UNCHECKEDDISABLED : RBS_UNCHECKEDNORMAL);
-	} else {
-		Part = BP_CHECKBOX;
-		if (fChecked) {
-			State = fDisabled ? CBS_CHECKEDDISABLED : CBS_CHECKEDNORMAL;
-		} else if (fIndeterminate) {
-			State = fDisabled ? CBS_MIXEDDISABLED : CBS_MIXEDNORMAL;
-		} else {
-			State = fDisabled ? CBS_UNCHECKEDDISABLED : CBS_UNCHECKEDNORMAL;
-		}
-	}
+	const int Part = BP_RADIOBUTTON;
+	const int State = fChecked
+		? (fDisabled ? RBS_CHECKEDDISABLED : RBS_CHECKEDNORMAL)
+		: (fDisabled ? RBS_UNCHECKEDDISABLED : RBS_UNCHECKEDNORMAL);
 
 	RECT rcClient;
 	::GetClientRect(hwnd, &rcClient);
 	::FillRect(hdc, &rcClient, m_hFaceBrush);
+	DrawButtonThemePart(hwnd, hdc, rcClient, Part, State, fDisabled);
+}
+
+void CDialogDarkModeSupport::DrawButtonThemePart(
+	HWND hwnd, HDC hdc, const RECT &rcButton, int Part, int State, bool fDisabled) const
+{
+	const HTHEME hTheme = ::OpenThemeData(hwnd, VSCLASS_BUTTON);
+	if (!hTheme)
+		return;
 
 	SIZE MarkSize = {0, 0};
 	::GetThemePartSize(hTheme, hdc, Part, State, nullptr, TS_DRAW, &MarkSize);
 
-	RECT rcMark = rcClient;
+	RECT rcMark = rcButton;
 	rcMark.top += ((rcMark.bottom - rcMark.top) - MarkSize.cy) / 2;
 	rcMark.right = rcMark.left + MarkSize.cx;
 	rcMark.bottom = rcMark.top + MarkSize.cy;
@@ -806,9 +753,10 @@ void CDialogDarkModeSupport::DrawButton(HWND hwnd, HDC hdc) const
 	TCHAR szText[256] = TEXT("");
 	const int TextLength = ::GetWindowText(hwnd, szText, _countof(szText));
 	if (TextLength > 0) {
+		const DWORD Style = static_cast<DWORD>(::GetWindowLong(hwnd, GWL_STYLE));
 		SIZE MarginSize = {0, 0};
 		::GetTextExtentPoint32(hdc, TEXT("0"), 1, &MarginSize);
-		RECT rcText = rcClient;
+		RECT rcText = rcButton;
 		rcText.left = rcMark.right + MarginSize.cx / 2;
 
 		UINT Format = DT_LEFT;
