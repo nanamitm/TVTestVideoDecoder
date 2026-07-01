@@ -1966,10 +1966,10 @@ STDMETHODIMP CMpeg2DecoderInputPin::Get(
 		switch (Id) {
 		case AM_RATE_SimpleRateChange:
 			{
-				AM_SimpleRateChange *p = static_cast<AM_SimpleRateChange*>(pPropertyData);
-				if (DataLength < sizeof(AM_SimpleRateChange) || !pBytesReturned) {
+				if (!pPropertyData || DataLength < sizeof(AM_SimpleRateChange) || !pBytesReturned) {
 					return E_POINTER;
 				}
+				AM_SimpleRateChange *p = static_cast<AM_SimpleRateChange*>(pPropertyData);
 				CAutoLock Lock(&m_csRateLock);
 				*p = m_RateChange;
 				*pBytesReturned = sizeof(AM_SimpleRateChange);
@@ -1978,6 +1978,9 @@ STDMETHODIMP CMpeg2DecoderInputPin::Get(
 
 		case AM_RATE_MaxFullDataRate:
 			{
+				if (!pPropertyData || DataLength < sizeof(AM_MaxFullDataRate) || !pBytesReturned) {
+					return E_POINTER;
+				}
 				AM_MaxFullDataRate *p = static_cast<AM_MaxFullDataRate*>(pPropertyData);
 
 				*p = 8 * 10000;
@@ -1987,6 +1990,9 @@ STDMETHODIMP CMpeg2DecoderInputPin::Get(
 
 		case AM_RATE_QueryFullFrameRate:
 			{
+				if (!pPropertyData || DataLength < sizeof(AM_QueryRate) || !pBytesReturned) {
+					return E_POINTER;
+				}
 				AM_QueryRate *p = static_cast<AM_QueryRate*>(pPropertyData);
 
 				p->lMaxForwardFullFrame = 8 * 10000;
@@ -1997,10 +2003,10 @@ STDMETHODIMP CMpeg2DecoderInputPin::Get(
 
 		case AM_RATE_QueryLastRateSegPTS:
 			{
-				REFERENCE_TIME *p = static_cast<REFERENCE_TIME*>(pPropertyData);
-				if (DataLength < sizeof(REFERENCE_TIME) || !pBytesReturned) {
+				if (!pPropertyData || DataLength < sizeof(REFERENCE_TIME) || !pBytesReturned) {
 					return E_POINTER;
 				}
+				REFERENCE_TIME *p = static_cast<REFERENCE_TIME*>(pPropertyData);
 				CAutoLock Lock(&m_csRateLock);
 				*p = m_RateChange.StartTime;
 				*pBytesReturned = sizeof(REFERENCE_TIME);
